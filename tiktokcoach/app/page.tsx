@@ -28,16 +28,15 @@ export default function Home() {
             </div>
 
             <h1 className="text-4xl md:text-6xl font-black leading-tight text-balance mb-6">
-              Passe du scroll au{' '}
+              Tu sais que t&apos;as du potentiel.{' '}
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-red-500">
-                plan d&apos;action
+                T&apos;as juste pas d&apos;idées.
               </span>
             </h1>
 
             <p className="text-lg md:text-xl text-zinc-400 max-w-2xl mx-auto leading-relaxed text-balance mb-10">
-              Génère un plan TikTok sur-mesure en quelques questions, puis débloque ton{' '}
-              <span className="text-zinc-200 font-semibold">coach IA</span> pour peaufiner tes idées,
-              tes hooks et ta stratégie — quand tu veux.
+              TikTokCoach analyse ton profil, génère un plan sur-mesure et devient ton coach personnel
+              disponible 24h/24 — pour que tu ne manques plus jamais d&apos;inspiration.
             </p>
 
             <Link
