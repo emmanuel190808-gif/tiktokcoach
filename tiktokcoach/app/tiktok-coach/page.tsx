@@ -2,8 +2,7 @@
 import { useState } from 'react'
 
 const STEPS = [
-  { key: 'pseudo', label: '1 / 6', q: 'Quel est ton pseudo TikTok ?' },
-  { key: 'univers', label: '2 / 6', q: "C'est quoi ton univers ?", opts: [
+  { key: 'univers', label: '1 / 5', q: "C'est quoi ton univers ?", opts: [
     { e: '👟', l: 'Mode, sneakers, style', v: 'mode/sneakers/style' },
     { e: '💰', l: 'Argent, business, entrepreneuriat', v: 'business/entrepreneuriat' },
     { e: '🏋️', l: 'Sport, fitness, santé', v: 'sport/fitness' },
@@ -12,25 +11,25 @@ const STEPS = [
     { e: '😂', l: 'Humour, sketchs, quotidien', v: 'humour/sketchs' },
     { e: '✏️', l: 'Autre — je décris mon univers', v: '__autre__' },
   ]},
-  { key: 'objectif', label: '3 / 6', q: 'Ton objectif principal ?', opts: [
+  { key: 'objectif', label: '2 / 5', q: 'Ton objectif principal ?', opts: [
     { e: '🔥', l: 'Devenir viral vite', v: 'devenir viral rapidement' },
     { e: '💸', l: 'Monétiser, générer des revenus', v: 'monétiser et générer des revenus' },
     { e: '🌟', l: 'Construire une communauté', v: 'construire une communauté engagée' },
     { e: '🚀', l: 'Promouvoir mon business/produit', v: 'promouvoir un business ou produit' },
   ]},
-  { key: 'experience', label: '4 / 6', q: 'Ton niveau sur TikTok ?', opts: [
+  { key: 'experience', label: '3 / 5', q: 'Ton niveau sur TikTok ?', opts: [
     { e: '🆕', l: 'Débutant total — 0 vidéo', v: 'débutant total' },
     { e: '📱', l: 'Quelques vidéos, aucun résultat', v: 'quelques vidéos sans résultats' },
     { e: '📈', l: 'Actif mais bloqué', v: 'actif mais bloqué' },
     { e: '💪', l: "J'ai eu des vidéos virales", v: 'expérimenté avec vidéos virales' },
   ]},
-  { key: 'frein', label: '5 / 6', q: 'Ton plus grand frein ?', opts: [
+  { key: 'frein', label: '4 / 5', q: 'Ton plus grand frein ?', opts: [
     { e: '🧠', l: 'Je ne sais pas quoi filmer', v: "manque d'idées" },
     { e: '😰', l: 'Peur du regard des autres', v: 'peur du regard des autres' },
     { e: '⏰', l: 'Je manque de temps', v: 'manque de temps' },
     { e: '📉', l: 'Mes vidéos ne décollent pas', v: 'vidéos sans engagement' },
   ]},
-  { key: 'frequence', label: '6 / 6', q: 'Combien de vidéos par semaine ?', opts: [
+  { key: 'frequence', label: '5 / 5', q: 'Combien de vidéos par semaine ?', opts: [
     { e: '🌱', l: '1 vidéo — je teste', v: '1' },
     { e: '⚡', l: '3 vidéos — rythme sérieux', v: '3' },
     { e: '🔥', l: '5 vidéos — full grind', v: '5' },
@@ -38,78 +37,58 @@ const STEPS = [
   ]},
 ]
 
-type PlanItem = { format: string; idee: string; hook: string }
-type PlanResult = {
-  niche: string
-  angle: string
-  description: string
-  plan?: PlanItem[]
-  conseils?: string[]
-}
-
-/** Ne lève jamais ; retourne null si /api/tiktok-profile échoue. */
-async function fetchTiktokProfileSilently(username: string): Promise<unknown> {
-  try {
-    const profileRes = await fetch('/api/tiktok-profile', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username }),
-    })
-    const profileJson = await profileRes.json()
-    if (profileJson?.profileData != null) {
-      return profileJson.profileData
-    }
-  } catch {
-    /* ignoré : génération du plan continue sans profil */
-  }
-  return null
-}
-
 export default function TikTokCoach() {
   const [step, setStep] = useState(0)
-  const [pseudoText, setPseudoText] = useState('')
   const [answers, setAnswers] = useState<Record<string, string>>({})
   const [autreText, setAutreText] = useState('')
+  const [pseudo, setPseudo] = useState('')
   const [loading, setLoading] = useState(false)
-  const [result, setResult] = useState<PlanResult | null>(null)
+  const [result, setResult] = useState<any>(null)
   const [error, setError] = useState('')
 
-  const s = STEPS[step]
-  const sel = answers[s?.key]
-
-  const pick = (key: string, val: string) => setAnswers(a => ({ ...a, [key]: val }))
-
-  const getAnswerValue = (key: string) => {
-    if (key === 'univers' && answers[key] === '__autre__') return autreText || 'univers non précisé'
-    return answers[key]
-  }
+  const isPseudoStep = step === 0
+  const currentStep = isPseudoStep ? null : STEPS[step - 1]
+  const sel = currentStep ? answers[currentStep.key] : null
+  const totalSteps = STEPS.length + 1
 
   const canContinue = () => {
-    if (s.key === 'pseudo') return pseudoText.trim().length > 0
+    if (isPseudoStep) return pseudo.trim().length > 0
     if (!sel) return false
-    if (s.key === 'univers' && sel === '__autre__' && !autreText.trim()) return false
+    if (currentStep?.key === 'univers' && sel === '__autre__' && !autreText.trim()) return false
     return true
   }
 
+  const pick = (key: string, val: string) => setAnswers(a => ({ ...a, [key]: val }))
+
   const next = () => {
-    if (step === 5) generate()
+    if (step === totalSteps - 1) generate()
     else setStep(x => x + 1)
   }
 
   const generate = async () => {
     setLoading(true)
     setError('')
-    const username = pseudoText.replace(/^@+/, '').trim()
-    const tiktokProfile = await fetchTiktokProfileSilently(username)
-
     try {
+      let tiktokProfile = null
+      try {
+        const profileRes = await fetch('/api/tiktok-profile', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: pseudo.replace('@', '').trim() })
+        })
+        const profileData = await profileRes.json()
+        if (profileRes.ok) tiktokProfile = profileData
+      } catch { }
+
       const finalAnswers = {
-        univers: getAnswerValue('univers'),
+        pseudo: pseudo.replace('@', '').trim(),
+        univers: currentStep?.key === 'univers' && sel === '__autre__' ? autreText : answers.univers,
         objectif: answers.objectif,
         experience: answers.experience,
         frein: answers.frein,
         frequence: answers.frequence,
       }
+
       const res = await fetch('/api/generate-plan', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -118,21 +97,13 @@ export default function TikTokCoach() {
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Erreur serveur')
       setResult(data)
-    } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Erreur serveur')
-    } finally {
-      setLoading(false)
+    } catch (e: any) {
+      setError(e.message)
     }
+    setLoading(false)
   }
 
-  const restart = () => {
-    setStep(0)
-    setPseudoText('')
-    setAnswers({})
-    setAutreText('')
-    setResult(null)
-    setError('')
-  }
+  const restart = () => { setStep(0); setAnswers({}); setAutreText(''); setPseudo(''); setResult(null); setError('') }
 
   if (loading) return (
     <main className="min-h-screen bg-black text-white flex items-center justify-center">
@@ -147,7 +118,7 @@ export default function TikTokCoach() {
     <main className="min-h-screen bg-black text-white flex items-center justify-center p-6">
       <div className="max-w-md w-full bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
         <p className="text-red-400 mb-4 text-sm">{error}</p>
-        <button onClick={() => { setError(''); setStep(5) }} className="mr-3 px-4 py-2 bg-zinc-800 rounded-lg text-sm">← Retour</button>
+        <button onClick={() => { setError(''); setStep(totalSteps - 1) }} className="mr-3 px-4 py-2 bg-zinc-800 rounded-lg text-sm">← Retour</button>
         <button onClick={generate} className="px-4 py-2 bg-red-500 rounded-lg text-sm font-bold">Réessayer</button>
       </div>
     </main>
@@ -164,17 +135,13 @@ export default function TikTokCoach() {
         <p className="text-zinc-400 text-sm">{result.description}</p>
       </div>
       <p className="text-xs font-bold uppercase tracking-widest text-cyan-400 mb-3">📅 Plan — {answers.frequence} vidéo(s)/semaine</p>
-      {result.plan?.map((item, i) => (
+      {result.plan?.map((item: any, i: number) => (
         <div key={i} className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 mb-3 flex gap-4">
           <span className="text-red-500 font-black text-2xl min-w-[32px]">J{i+1}</span>
           <div>
             <div className="text-xs font-bold text-cyan-400 uppercase mb-1">{item.format}</div>
             <div className="font-semibold text-sm mb-1">{item.idee}</div>
-            <div className="text-xs text-zinc-500 italic">
-              <span className="text-zinc-500">&ldquo;</span>
-              {item.hook}
-              <span className="text-zinc-500">&rdquo;</span>
-            </div>
+            <div className="text-xs text-zinc-500 italic">"{item.hook}"</div>
           </div>
         </div>
       ))}
@@ -184,13 +151,14 @@ export default function TikTokCoach() {
           <span className="text-red-500 font-bold flex-shrink-0">→</span>{c}
         </div>
       ))}
-      <a href="/tiktok-coach/chat"
-        className="mt-6 w-full py-3 bg-red-500 text-white rounded-xl font-bold text-sm text-center block">
+      <a href="/tiktok-coach/chat" className="mt-6 w-full py-3 bg-red-500 text-white rounded-xl font-bold text-sm text-center block">
         💬 Chatter avec ton coach
       </a>
       <button onClick={restart} className="mt-3 w-full py-3 bg-zinc-900 text-zinc-400 rounded-xl font-semibold border border-zinc-800">↺ Recommencer</button>
     </main>
   )
+
+  const pct = Math.round((step / totalSteps) * 100)
 
   return (
     <main className="min-h-screen bg-black text-white p-6 max-w-lg mx-auto">
@@ -199,60 +167,58 @@ export default function TikTokCoach() {
       </div>
       <div className="mb-6">
         <div className="flex justify-between text-xs text-zinc-600 mb-2 uppercase tracking-widest">
-          <span>Étape {s.label}</span><span>{Math.round((step / 6) * 100)}%</span>
+          <span>{isPseudoStep ? 'Étape 1 / 6' : `Étape ${step + 1} / 6`}</span>
+          <span>{pct}%</span>
         </div>
         <div className="h-0.5 bg-zinc-800 rounded-full overflow-hidden">
-          <div className="h-full bg-gradient-to-r from-cyan-400 to-red-500 transition-all duration-300"
-            style={{ width: `${Math.round((step / 6) * 100)}%` }} />
+          <div className="h-full bg-gradient-to-r from-cyan-400 to-red-500 transition-all duration-300" style={{ width: `${pct}%` }} />
         </div>
       </div>
       <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
-        <div className="text-xs font-bold text-red-500 uppercase tracking-widest mb-2">Étape {s.label}</div>
-        <div className="text-xl font-bold mb-5">{s.q}</div>
-        {s.key === 'pseudo' ? (
-          <input
-            type="text"
-            value={pseudoText}
-            onChange={e => setPseudoText(e.target.value)}
-            placeholder="@tonpseudo"
-            autoComplete="username"
-            className="w-full mb-4 px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-xl text-sm text-white placeholder-zinc-500 outline-none focus:border-red-500 transition-colors"
-          />
+        {isPseudoStep ? (
+          <>
+            <div className="text-xs font-bold text-red-500 uppercase tracking-widest mb-2">Étape 1 / 6</div>
+            <div className="text-xl font-bold mb-5">Quel est ton pseudo TikTok ?</div>
+            <input
+              type="text"
+              value={pseudo}
+              onChange={e => setPseudo(e.target.value)}
+              placeholder="@tonpseudo"
+              className="w-full mb-6 px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-xl text-sm text-white placeholder-zinc-500 outline-none focus:border-red-500 transition-colors"
+            />
+          </>
         ) : (
-          <div className="flex flex-col gap-2 mb-4">
-            {s.opts!.map(o => (
-              <div key={o.v} onClick={() => pick(s.key, o.v)}
-                className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
-                  sel === o.v ? 'border-red-500 bg-red-500/10' : 'border-zinc-800 bg-zinc-800/50 hover:border-zinc-600'
-                }`}>
-                <span className="text-lg">{o.e}</span>
-                <span className="text-sm font-medium">{o.l}</span>
-                <span className={`ml-auto w-4 h-4 rounded-full border flex-shrink-0 ${
-                  sel === o.v ? 'bg-red-500 border-red-500' : 'border-zinc-600'
-                }`} />
-              </div>
-            ))}
-          </div>
-        )}
-        {s.key === 'univers' && sel === '__autre__' && (
-          <input
-            type="text"
-            value={autreText}
-            onChange={e => setAutreText(e.target.value)}
-            placeholder="Décris ton univers en quelques mots…"
-            className="w-full mb-4 px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-xl text-sm text-white placeholder-zinc-500 outline-none focus:border-red-500 transition-colors"
-          />
+          <>
+            <div className="text-xs font-bold text-red-500 uppercase tracking-widest mb-2">Étape {step + 1} / 6</div>
+            <div className="text-xl font-bold mb-5">{currentStep!.q}</div>
+            <div className="flex flex-col gap-2 mb-4">
+              {currentStep!.opts.map(o => (
+                <div key={o.v} onClick={() => pick(currentStep!.key, o.v)}
+                  className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${sel === o.v ? 'border-red-500 bg-red-500/10' : 'border-zinc-800 bg-zinc-800/50 hover:border-zinc-600'}`}>
+                  <span className="text-lg">{o.e}</span>
+                  <span className="text-sm font-medium">{o.l}</span>
+                  <span className={`ml-auto w-4 h-4 rounded-full border flex-shrink-0 ${sel === o.v ? 'bg-red-500 border-red-500' : 'border-zinc-600'}`} />
+                </div>
+              ))}
+            </div>
+            {currentStep!.key === 'univers' && sel === '__autre__' && (
+              <input
+                type="text"
+                value={autreText}
+                onChange={e => setAutreText(e.target.value)}
+                placeholder="Décris ton univers en quelques mots…"
+                className="w-full mb-4 px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-xl text-sm text-white placeholder-zinc-500 outline-none focus:border-red-500 transition-colors"
+              />
+            )}
+          </>
         )}
         <div className="flex gap-2">
           {step > 0 && (
-            <button onClick={() => setStep(x => x - 1)}
-              className="px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-xl text-sm font-bold">←</button>
+            <button onClick={() => setStep(x => x - 1)} className="px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-xl text-sm font-bold">←</button>
           )}
           <button onClick={next} disabled={!canContinue()}
-            className={`flex-1 py-3 rounded-xl text-sm font-bold transition-all ${
-              canContinue() ? 'bg-red-500 text-white' : 'bg-zinc-800 text-zinc-600 cursor-not-allowed'
-            }`}>
-            {step === 5 ? '🚀 Générer mon plan' : 'Continuer →'}
+            className={`flex-1 py-3 rounded-xl text-sm font-bold transition-all ${canContinue() ? 'bg-red-500 text-white' : 'bg-zinc-800 text-zinc-600 cursor-not-allowed'}`}>
+            {step === totalSteps - 1 ? '🚀 Générer mon plan' : 'Continuer →'}
           </button>
         </div>
       </div>
