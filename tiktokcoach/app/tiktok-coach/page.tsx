@@ -38,6 +38,15 @@ const STEPS = [
   ]},
 ]
 
+type PlanItem = { format: string; idee: string; hook: string }
+type PlanResult = {
+  niche: string
+  angle: string
+  description: string
+  plan?: PlanItem[]
+  conseils?: string[]
+}
+
 /** Ne lève jamais ; retourne null si /api/tiktok-profile échoue. */
 async function fetchTiktokProfileSilently(username: string): Promise<unknown> {
   try {
@@ -62,7 +71,7 @@ export default function TikTokCoach() {
   const [answers, setAnswers] = useState<Record<string, string>>({})
   const [autreText, setAutreText] = useState('')
   const [loading, setLoading] = useState(false)
-  const [result, setResult] = useState<any>(null)
+  const [result, setResult] = useState<PlanResult | null>(null)
   const [error, setError] = useState('')
 
   const s = STEPS[step]
@@ -109,8 +118,8 @@ export default function TikTokCoach() {
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Erreur serveur')
       setResult(data)
-    } catch (e: any) {
-      setError(typeof e?.message === 'string' ? e.message : 'Erreur serveur')
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Erreur serveur')
     } finally {
       setLoading(false)
     }
@@ -155,13 +164,17 @@ export default function TikTokCoach() {
         <p className="text-zinc-400 text-sm">{result.description}</p>
       </div>
       <p className="text-xs font-bold uppercase tracking-widest text-cyan-400 mb-3">📅 Plan — {answers.frequence} vidéo(s)/semaine</p>
-      {result.plan?.map((item: any, i: number) => (
+      {result.plan?.map((item, i) => (
         <div key={i} className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 mb-3 flex gap-4">
           <span className="text-red-500 font-black text-2xl min-w-[32px]">J{i+1}</span>
           <div>
             <div className="text-xs font-bold text-cyan-400 uppercase mb-1">{item.format}</div>
             <div className="font-semibold text-sm mb-1">{item.idee}</div>
-            <div className="text-xs text-zinc-500 italic">"{item.hook}"</div>
+            <div className="text-xs text-zinc-500 italic">
+              <span className="text-zinc-500">&ldquo;</span>
+              {item.hook}
+              <span className="text-zinc-500">&rdquo;</span>
+            </div>
           </div>
         </div>
       ))}
