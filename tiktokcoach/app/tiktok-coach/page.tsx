@@ -38,6 +38,24 @@ const STEPS = [
   ]},
 ]
 
+/** Ne lève jamais ; retourne null si /api/tiktok-profile échoue. */
+async function fetchTiktokProfileSilently(username: string): Promise<unknown> {
+  try {
+    const profileRes = await fetch('/api/tiktok-profile', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username }),
+    })
+    const profileJson = await profileRes.json()
+    if (profileJson?.profileData != null) {
+      return profileJson.profileData
+    }
+  } catch {
+    /* ignoré : génération du plan continue sans profil */
+  }
+  return null
+}
+
 export default function TikTokCoach() {
   const [step, setStep] = useState(0)
   const [pseudoText, setPseudoText] = useState('')
@@ -72,18 +90,10 @@ export default function TikTokCoach() {
   const generate = async () => {
     setLoading(true)
     setError('')
-    try {
-      const username = pseudoText.replace(/^@+/, '').trim()
-      const profileRes = await fetch('/api/tiktok-profile', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username }),
-      })
-      const profileData = await profileRes.json()
-      if (!profileRes.ok) {
-        throw new Error(profileData.error || profileData.detail || 'Impossible de récupérer le profil TikTok')
-      }
+    const username = pseudoText.replace(/^@+/, '').trim()
+    const tiktokProfile = await fetchTiktokProfileSilently(username)
 
+    try {
       const finalAnswers = {
         univers: getAnswerValue('univers'),
         objectif: answers.objectif,
@@ -94,15 +104,16 @@ export default function TikTokCoach() {
       const res = await fetch('/api/generate-plan', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ answers: finalAnswers, tiktokProfile: profileData }),
+        body: JSON.stringify({ answers: finalAnswers, tiktokProfile }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Erreur serveur')
       setResult(data)
     } catch (e: any) {
-      setError(e.message)
+      setError(typeof e?.message === 'string' ? e.message : 'Erreur serveur')
+    } finally {
+      setLoading(false)
     }
-    setLoading(false)
   }
 
   const restart = () => {
