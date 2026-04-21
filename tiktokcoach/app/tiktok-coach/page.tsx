@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 
 const STEPS = [
   { key: 'univers', label: '1 / 5', q: "C'est quoi ton univers ?", opts: [
@@ -9,6 +9,7 @@ const STEPS = [
     { e: '🎮', l: 'Gaming, tech, culture web', v: 'gaming/tech' },
     { e: '✈️', l: 'Lifestyle, voyage, food', v: 'lifestyle/voyage' },
     { e: '😂', l: 'Humour, sketchs, quotidien', v: 'humour/sketchs' },
+    { e: '✏️', l: 'Autre — je décris mon univers', v: '__autre__' },
   ]},
   { key: 'objectif', label: '2 / 5', q: 'Ton objectif principal ?', opts: [
     { e: '🔥', l: 'Devenir viral vite', v: 'devenir viral rapidement' },
@@ -39,6 +40,7 @@ const STEPS = [
 export default function TikTokCoach() {
   const [step, setStep] = useState(0)
   const [answers, setAnswers] = useState<Record<string, string>>({})
+  const [autreText, setAutreText] = useState('')
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState<any>(null)
   const [error, setError] = useState('')
@@ -47,6 +49,17 @@ export default function TikTokCoach() {
   const sel = answers[s?.key]
 
   const pick = (key: string, val: string) => setAnswers(a => ({ ...a, [key]: val }))
+
+  const getAnswerValue = (key: string) => {
+    if (key === 'univers' && answers[key] === '__autre__') return autreText || 'univers non précisé'
+    return answers[key]
+  }
+
+  const canContinue = () => {
+    if (!sel) return false
+    if (s.key === 'univers' && sel === '__autre__' && !autreText.trim()) return false
+    return true
+  }
 
   const next = () => {
     if (step === 4) generate()
@@ -57,10 +70,17 @@ export default function TikTokCoach() {
     setLoading(true)
     setError('')
     try {
+      const finalAnswers = {
+        univers: getAnswerValue('univers'),
+        objectif: answers.objectif,
+        experience: answers.experience,
+        frein: answers.frein,
+        frequence: answers.frequence,
+      }
       const res = await fetch('/api/generate-plan', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ answers }),
+        body: JSON.stringify({ answers: finalAnswers }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Erreur serveur')
@@ -71,13 +91,13 @@ export default function TikTokCoach() {
     setLoading(false)
   }
 
-  const restart = () => { setStep(0); setAnswers({}); setResult(null); setError('') }
+  const restart = () => { setStep(0); setAnswers({}); setAutreText(''); setResult(null); setError('') }
 
   if (loading) return (
     <main className="min-h-screen bg-black text-white flex items-center justify-center">
       <div className="text-center">
         <div className="w-10 h-10 border-2 border-zinc-700 border-t-red-500 rounded-full animate-spin mx-auto mb-4" />
-        <p className="text-zinc-400">Claude analyse ton profil…</p>
+        <p className="text-zinc-400">Ton coach analyse ton profil…</p>
       </div>
     </main>
   )
@@ -119,7 +139,11 @@ export default function TikTokCoach() {
           <span className="text-red-500 font-bold flex-shrink-0">→</span>{c}
         </div>
       ))}
-      <button onClick={restart} className="mt-6 w-full py-3 bg-zinc-900 text-zinc-400 rounded-xl font-semibold border border-zinc-800">↺ Recommencer</button>
+      <a href="/tiktok-coach/chat"
+        className="mt-6 w-full py-3 bg-red-500 text-white rounded-xl font-bold text-sm text-center block">
+        💬 Chatter avec ton coach
+      </a>
+      <button onClick={restart} className="mt-3 w-full py-3 bg-zinc-900 text-zinc-400 rounded-xl font-semibold border border-zinc-800">↺ Recommencer</button>
     </main>
   )
 
@@ -140,7 +164,7 @@ export default function TikTokCoach() {
       <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
         <div className="text-xs font-bold text-red-500 uppercase tracking-widest mb-2">Étape {s.label}</div>
         <div className="text-xl font-bold mb-5">{s.q}</div>
-        <div className="flex flex-col gap-2 mb-6">
+        <div className="flex flex-col gap-2 mb-4">
           {s.opts.map(o => (
             <div key={o.v} onClick={() => pick(s.key, o.v)}
               className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
@@ -154,14 +178,23 @@ export default function TikTokCoach() {
             </div>
           ))}
         </div>
+        {s.key === 'univers' && sel === '__autre__' && (
+          <input
+            type="text"
+            value={autreText}
+            onChange={e => setAutreText(e.target.value)}
+            placeholder="Décris ton univers en quelques mots…"
+            className="w-full mb-4 px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-xl text-sm text-white placeholder-zinc-500 outline-none focus:border-red-500 transition-colors"
+          />
+        )}
         <div className="flex gap-2">
           {step > 0 && (
             <button onClick={() => setStep(x => x - 1)}
               className="px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-xl text-sm font-bold">←</button>
           )}
-          <button onClick={next} disabled={!sel}
+          <button onClick={next} disabled={!canContinue()}
             className={`flex-1 py-3 rounded-xl text-sm font-bold transition-all ${
-              sel ? 'bg-red-500 text-white' : 'bg-zinc-800 text-zinc-600 cursor-not-allowed'
+              canContinue() ? 'bg-red-500 text-white' : 'bg-zinc-800 text-zinc-600 cursor-not-allowed'
             }`}>
             {step === 4 ? '🚀 Générer mon plan' : 'Continuer →'}
           </button>
