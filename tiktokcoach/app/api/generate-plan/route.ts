@@ -43,7 +43,11 @@ export async function POST(req: Request) {
 
     const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
+    const rawPseudo = (answers.pseudo as string | undefined) ?? ''
+    const pseudoForPrompt = String(rawPseudo).replace(/^@+/, '').trim()
+
     const prompt = `Tu es un expert TikTok growth. Profil (questionnaire) :
+- Pseudo TikTok : @${pseudoForPrompt}
 - Univers : ${answers.univers}
 - Objectif : ${answers.objectif}
 - Expérience : ${answers.experience}
