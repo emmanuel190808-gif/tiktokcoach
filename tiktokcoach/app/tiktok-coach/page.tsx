@@ -9,7 +9,6 @@ const STEPS = [
     { e: '🎮', l: 'Gaming, tech, culture web', v: 'gaming/tech' },
     { e: '✈️', l: 'Lifestyle, voyage, food', v: 'lifestyle/voyage' },
     { e: '😂', l: 'Humour, sketchs, quotidien', v: 'humour/sketchs' },
-    { e: '✏️', l: 'Autre — je décris mon univers', v: '__autre__' },
   ]},
   { key: 'objectif', label: '2 / 5', q: 'Ton objectif principal ?', opts: [
     { e: '🔥', l: 'Devenir viral vite', v: 'devenir viral rapidement' },
@@ -40,28 +39,17 @@ const STEPS = [
 export default function TikTokCoach() {
   const [step, setStep] = useState(0)
   const [answers, setAnswers] = useState<Record<string, string>>({})
-  const [autreText, setAutreText] = useState('')
-  const [pseudo, setPseudo] = useState('')
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState<any>(null)
   const [error, setError] = useState('')
 
-  const isPseudoStep = step === 0
-  const currentStep = isPseudoStep ? null : STEPS[step - 1]
-  const sel = currentStep ? answers[currentStep.key] : null
-  const totalSteps = STEPS.length + 1
-
-  const canContinue = () => {
-    if (isPseudoStep) return pseudo.trim().length > 0
-    if (!sel) return false
-    if (currentStep?.key === 'univers' && sel === '__autre__' && !autreText.trim()) return false
-    return true
-  }
+  const s = STEPS[step]
+  const sel = answers[s?.key]
 
   const pick = (key: string, val: string) => setAnswers(a => ({ ...a, [key]: val }))
 
   const next = () => {
-    if (step === totalSteps - 1) generate()
+    if (step === 4) generate()
     else setStep(x => x + 1)
   }
 
@@ -69,30 +57,10 @@ export default function TikTokCoach() {
     setLoading(true)
     setError('')
     try {
-      let tiktokProfile = null
-      try {
-        const profileRes = await fetch('/api/tiktok-profile', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username: pseudo.replace('@', '').trim() })
-        })
-        const profileData = await profileRes.json()
-        if (profileRes.ok) tiktokProfile = profileData
-      } catch { }
-
-      const finalAnswers = {
-        pseudo: pseudo.replace('@', '').trim(),
-        univers: currentStep?.key === 'univers' && sel === '__autre__' ? autreText : answers.univers,
-        objectif: answers.objectif,
-        experience: answers.experience,
-        frein: answers.frein,
-        frequence: answers.frequence,
-      }
-
       const res = await fetch('/api/generate-plan', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ answers: finalAnswers, tiktokProfile }),
+        body: JSON.stringify({ answers }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Erreur serveur')
@@ -103,7 +71,7 @@ export default function TikTokCoach() {
     setLoading(false)
   }
 
-  const restart = () => { setStep(0); setAnswers({}); setAutreText(''); setPseudo(''); setResult(null); setError('') }
+  const restart = () => { setStep(0); setAnswers({}); setResult(null); setError('') }
 
   if (loading) return (
     <main className="min-h-screen bg-black text-white flex items-center justify-center">
@@ -118,7 +86,7 @@ export default function TikTokCoach() {
     <main className="min-h-screen bg-black text-white flex items-center justify-center p-6">
       <div className="max-w-md w-full bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
         <p className="text-red-400 mb-4 text-sm">{error}</p>
-        <button onClick={() => { setError(''); setStep(totalSteps - 1) }} className="mr-3 px-4 py-2 bg-zinc-800 rounded-lg text-sm">← Retour</button>
+        <button onClick={() => { setError(''); setStep(4) }} className="mr-3 px-4 py-2 bg-zinc-800 rounded-lg text-sm">← Retour</button>
         <button onClick={generate} className="px-4 py-2 bg-red-500 rounded-lg text-sm font-bold">Réessayer</button>
       </div>
     </main>
@@ -158,8 +126,6 @@ export default function TikTokCoach() {
     </main>
   )
 
-  const pct = Math.round((step / totalSteps) * 100)
-
   return (
     <main className="min-h-screen bg-black text-white p-6 max-w-lg mx-auto">
       <div className="text-xl font-black tracking-widest mb-8">
@@ -167,58 +133,32 @@ export default function TikTokCoach() {
       </div>
       <div className="mb-6">
         <div className="flex justify-between text-xs text-zinc-600 mb-2 uppercase tracking-widest">
-          <span>{isPseudoStep ? 'Étape 1 / 6' : `Étape ${step + 1} / 6`}</span>
-          <span>{pct}%</span>
+          <span>Étape {s.label}</span><span>{Math.round((step / 5) * 100)}%</span>
         </div>
         <div className="h-0.5 bg-zinc-800 rounded-full overflow-hidden">
-          <div className="h-full bg-gradient-to-r from-cyan-400 to-red-500 transition-all duration-300" style={{ width: `${pct}%` }} />
+          <div className="h-full bg-gradient-to-r from-cyan-400 to-red-500 transition-all duration-300" style={{ width: `${Math.round((step / 5) * 100)}%` }} />
         </div>
       </div>
       <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
-        {isPseudoStep ? (
-          <>
-            <div className="text-xs font-bold text-red-500 uppercase tracking-widest mb-2">Étape 1 / 6</div>
-            <div className="text-xl font-bold mb-5">Quel est ton pseudo TikTok ?</div>
-            <input
-              type="text"
-              value={pseudo}
-              onChange={e => setPseudo(e.target.value)}
-              placeholder="@tonpseudo"
-              className="w-full mb-6 px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-xl text-sm text-white placeholder-zinc-500 outline-none focus:border-red-500 transition-colors"
-            />
-          </>
-        ) : (
-          <>
-            <div className="text-xs font-bold text-red-500 uppercase tracking-widest mb-2">Étape {step + 1} / 6</div>
-            <div className="text-xl font-bold mb-5">{currentStep!.q}</div>
-            <div className="flex flex-col gap-2 mb-4">
-              {currentStep!.opts.map(o => (
-                <div key={o.v} onClick={() => pick(currentStep!.key, o.v)}
-                  className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${sel === o.v ? 'border-red-500 bg-red-500/10' : 'border-zinc-800 bg-zinc-800/50 hover:border-zinc-600'}`}>
-                  <span className="text-lg">{o.e}</span>
-                  <span className="text-sm font-medium">{o.l}</span>
-                  <span className={`ml-auto w-4 h-4 rounded-full border flex-shrink-0 ${sel === o.v ? 'bg-red-500 border-red-500' : 'border-zinc-600'}`} />
-                </div>
-              ))}
+        <div className="text-xs font-bold text-red-500 uppercase tracking-widest mb-2">Étape {s.label}</div>
+        <div className="text-xl font-bold mb-5">{s.q}</div>
+        <div className="flex flex-col gap-2 mb-6">
+          {s.opts.map(o => (
+            <div key={o.v} onClick={() => pick(s.key, o.v)}
+              className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${sel === o.v ? 'border-red-500 bg-red-500/10' : 'border-zinc-800 bg-zinc-800/50 hover:border-zinc-600'}`}>
+              <span className="text-lg">{o.e}</span>
+              <span className="text-sm font-medium">{o.l}</span>
+              <span className={`ml-auto w-4 h-4 rounded-full border flex-shrink-0 ${sel === o.v ? 'bg-red-500 border-red-500' : 'border-zinc-600'}`} />
             </div>
-            {currentStep!.key === 'univers' && sel === '__autre__' && (
-              <input
-                type="text"
-                value={autreText}
-                onChange={e => setAutreText(e.target.value)}
-                placeholder="Décris ton univers en quelques mots…"
-                className="w-full mb-4 px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-xl text-sm text-white placeholder-zinc-500 outline-none focus:border-red-500 transition-colors"
-              />
-            )}
-          </>
-        )}
+          ))}
+        </div>
         <div className="flex gap-2">
           {step > 0 && (
             <button onClick={() => setStep(x => x - 1)} className="px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-xl text-sm font-bold">←</button>
           )}
-          <button onClick={next} disabled={!canContinue()}
-            className={`flex-1 py-3 rounded-xl text-sm font-bold transition-all ${canContinue() ? 'bg-red-500 text-white' : 'bg-zinc-800 text-zinc-600 cursor-not-allowed'}`}>
-            {step === totalSteps - 1 ? '🚀 Générer mon plan' : 'Continuer →'}
+          <button onClick={next} disabled={!sel}
+            className={`flex-1 py-3 rounded-xl text-sm font-bold transition-all ${sel ? 'bg-red-500 text-white' : 'bg-zinc-800 text-zinc-600 cursor-not-allowed'}`}>
+            {step === 4 ? '🚀 Générer mon plan' : 'Continuer →'}
           </button>
         </div>
       </div>
