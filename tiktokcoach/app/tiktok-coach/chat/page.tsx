@@ -40,7 +40,7 @@ export default function CoachChat() {
   }
 
   return (
-    <main className="min-h-screen bg-black text-white flex flex-col max-w-lg mx-auto">
+    <main translate="no" className="notranslate min-h-screen bg-black text-white flex flex-col max-w-lg mx-auto">
       <div className="flex items-center gap-3 p-4 border-b border-zinc-800 sticky top-0 bg-black z-10">
         <div className="w-9 h-9 rounded-full bg-gradient-to-br from-cyan-400 to-red-500 flex items-center justify-center text-sm font-black">TC</div>
         <div>

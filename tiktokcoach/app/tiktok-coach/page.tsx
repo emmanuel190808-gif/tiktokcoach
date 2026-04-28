@@ -92,7 +92,7 @@ export default function TikTokCoach() {
   }
 
   if (loading) return (
-    <main className="min-h-screen bg-black text-white flex items-center justify-center">
+    <main translate="no" className="notranslate min-h-screen bg-black text-white flex items-center justify-center">
       <div className="text-center">
         <div className="w-10 h-10 border-2 border-zinc-700 border-t-red-500 rounded-full animate-spin mx-auto mb-4" />
         <p className="text-zinc-400">Ton coach analyse ton profil…</p>
@@ -101,7 +101,7 @@ export default function TikTokCoach() {
   )
 
   if (error) return (
-    <main className="min-h-screen bg-black text-white flex items-center justify-center p-6">
+    <main translate="no" className="notranslate min-h-screen bg-black text-white flex items-center justify-center p-6">
       <div className="max-w-md w-full bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
         <p className="text-red-400 mb-4 text-sm">{error}</p>
         <button onClick={() => { setError(''); setStep(LAST_STEP) }} className="mr-3 px-4 py-2 bg-zinc-800 rounded-lg text-sm">← Retour</button>
@@ -111,7 +111,7 @@ export default function TikTokCoach() {
   )
 
   if (result) return (
-    <main className="min-h-screen bg-black text-white p-6 max-w-lg mx-auto">
+    <main translate="no" className="notranslate min-h-screen bg-black text-white p-6 max-w-lg mx-auto">
       <div className="text-xl font-black tracking-widest mb-6">
         <span className="text-cyan-400">Tik</span>Tok<span className="text-red-500">Coach</span>
       </div>
@@ -147,7 +147,7 @@ export default function TikTokCoach() {
   const pct = Math.round((step / LAST_STEP) * 100)
 
   return (
-    <main className="min-h-screen bg-black text-white p-6 max-w-lg mx-auto">
+    <main translate="no" className="notranslate min-h-screen bg-black text-white p-6 max-w-lg mx-auto">
       <div className="text-xl font-black tracking-widest mb-8">
         <span className="text-cyan-400">Tik</span>Tok<span className="text-red-500">Coach</span>
       </div>
