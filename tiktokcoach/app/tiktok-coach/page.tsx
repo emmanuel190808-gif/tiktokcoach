@@ -227,6 +227,25 @@ export default function TikTokCoach() {
             </button>
           </header>
 
+          <section className="rounded-2xl border border-zinc-800 bg-zinc-900/90 p-5 shadow-lg shadow-black/30">
+            <p className="text-[11px] font-bold uppercase tracking-[0.25em] text-zinc-500 mb-4">Profil analysé</p>
+            <div className="flex flex-wrap items-center gap-3">
+              <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-black border border-zinc-700 text-white" aria-hidden>
+                <svg className="h-7 w-7" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 11-5.2 1.74 2.89 2.89 0 012.31-4.64 2.93 2.93 0 01.88.13V9.4a6.84 6.84 0 00-1-.05A6.33 6.33 0 005 20.1a6.34 6.34 0 0010.86-4.43v-7a8.16 8.16 0 004.77 1.52v-3.4a4.85 4.85 0 01-1-.1z" />
+                </svg>
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="text-lg font-bold text-white truncate">
+                  @{pseudo.replace(/^@+/, '').trim() || 'pseudo'}
+                </p>
+              </div>
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/40 bg-emerald-500/15 px-3 py-1.5 text-[11px] font-bold tracking-wide text-emerald-300 shrink-0">
+                Compte analysé ✓
+              </span>
+            </div>
+          </section>
+
           <section className="rounded-3xl border border-zinc-800/80 bg-gradient-to-b from-zinc-900/90 to-zinc-950/95 p-8 shadow-2xl shadow-black/50 overflow-hidden relative">
             <div className="absolute top-0 right-0 w-64 h-64 bg-red-500/10 blur-3xl rounded-full pointer-events-none" />
             <div className="absolute bottom-0 left-0 w-48 h-48 bg-cyan-500/10 blur-3xl rounded-full pointer-events-none" />
