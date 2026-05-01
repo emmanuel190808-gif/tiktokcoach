@@ -59,6 +59,7 @@ ${formatTikTokBlock(tiktokProfile as TikTokProfile)}
 
 Réponds UNIQUEMENT en JSON valide, sans backticks ni texte avant/après.
 {
+  "potentialScore": nombre entier entre 60 et 99 inclus, estimation honnête du potentiel TikTok du créateur selon le questionnaire,
   "niche": "Nom court (4-6 mots)",
   "angle": "Angle différenciateur (1 phrase percutante)",
   "description": "Potentiel TikTok en 2 phrases en tutoiement",
