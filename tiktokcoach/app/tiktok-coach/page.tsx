@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useState } from 'react'
 
 const STEPS = [
   {
@@ -74,7 +74,6 @@ type GeneratePlanResult = {
   niche?: string
   angle?: string
   description?: string
-  potentialScore?: number
   plan?: PlanItem[]
   conseils?: string[]
 }
@@ -89,18 +88,13 @@ const FORMAT_BADGE_STYLES = [
 
 const CONSEIL_ICONS = ['🎯', '⚡', '📈', '💡', '🔑', '✨']
 
-function clampPotentialScore(n: unknown): number | null {
-  if (typeof n !== 'number' || Number.isNaN(n)) return null
-  const x = Math.round(n)
-  if (x < 60 || x > 99) return null
-  return x
-}
-
-function fallbackPotentialScore(result: Pick<GeneratePlanResult, 'niche' | 'angle'>): number {
-  const str = `${result.niche ?? ''}|${result.angle ?? ''}`
-  let h = 0
-  for (let i = 0; i < str.length; i++) h = ((h << 5) - h + str.charCodeAt(i)) | 0
-  return 60 + (Math.abs(h) % 40)
+function shortStrategy(text: string | undefined, maxLen: number): string {
+  const t = (text ?? '').replace(/\s+/g, ' ').trim()
+  if (t.length <= maxLen) return t
+  const cut = t.slice(0, maxLen - 1).trimEnd()
+  const lastSpace = cut.lastIndexOf(' ')
+  const base = lastSpace > 40 ? cut.slice(0, lastSpace) : cut
+  return `${base}…`
 }
 
 function BrandMark() {
@@ -118,25 +112,10 @@ export default function TikTokCoach() {
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState<GeneratePlanResult | null>(null)
   const [error, setError] = useState('')
-  const [scoreBarPct, setScoreBarPct] = useState(0)
 
   const isPseudoStep = step === 0
   const s = isPseudoStep ? null : STEPS[step - 1]
   const sel = s ? answers[s.key] : null
-
-  const potentialScore = useMemo(() => {
-    if (!result) return 0
-    return clampPotentialScore(result.potentialScore) ?? fallbackPotentialScore(result)
-  }, [result])
-
-  useEffect(() => {
-    if (!result) {
-      setScoreBarPct(0)
-      return
-    }
-    const id = requestAnimationFrame(() => setScoreBarPct(potentialScore))
-    return () => cancelAnimationFrame(id)
-  }, [result, potentialScore])
 
   const canContinue = () => {
     if (isPseudoStep) return pseudo.trim().length > 0
@@ -246,23 +225,55 @@ export default function TikTokCoach() {
             </div>
           </section>
 
-          <section className="rounded-3xl border border-zinc-800/80 bg-gradient-to-b from-zinc-900/90 to-zinc-950/95 p-8 shadow-2xl shadow-black/50 overflow-hidden relative">
-            <div className="absolute top-0 right-0 w-64 h-64 bg-red-500/10 blur-3xl rounded-full pointer-events-none" />
-            <div className="absolute bottom-0 left-0 w-48 h-48 bg-cyan-500/10 blur-3xl rounded-full pointer-events-none" />
-            <p className="text-[11px] font-bold uppercase tracking-[0.25em] text-zinc-500 mb-3 relative">Potentiel TikTok</p>
-            <div className="flex flex-wrap items-end gap-2 relative mb-6">
-              <span className="text-7xl sm:text-8xl font-black tabular-nums tracking-tight bg-gradient-to-br from-white via-white to-zinc-400 bg-clip-text text-transparent leading-none">
-                {potentialScore}
-              </span>
-              <span className="text-2xl font-bold text-zinc-500 mb-2">/99</span>
+          <section className="rounded-2xl border border-zinc-800/70 bg-zinc-950/90 p-5 sm:p-6 shadow-xl shadow-black/40">
+            <p className="text-[11px] font-bold uppercase tracking-[0.25em] text-zinc-500 mb-5">Ton profil créateur</p>
+            <div className="divide-y divide-zinc-800/90">
+              <div className="flex gap-3 py-4">
+                <span className="text-lg shrink-0 leading-6" aria-hidden>
+                  🎯
+                </span>
+                <div className="min-w-0 flex-1 text-sm leading-relaxed">
+                  <span className="font-semibold text-zinc-400">Niche : </span>
+                  <span className="text-white">{result.niche ?? '—'}</span>
+                </div>
+              </div>
+              <div className="flex gap-3 py-4">
+                <span className="text-lg shrink-0 leading-6" aria-hidden>
+                  ⚡
+                </span>
+                <div className="min-w-0 flex-1 text-sm leading-relaxed">
+                  <span className="font-semibold text-zinc-400">Rythme : </span>
+                  <span className="text-white">{answers.frequence ?? '—'} vidéo(s)/semaine</span>
+                </div>
+              </div>
+              <div className="flex gap-3 py-4">
+                <span className="text-lg shrink-0 leading-6" aria-hidden>
+                  🔥
+                </span>
+                <div className="min-w-0 flex-1 text-sm leading-relaxed">
+                  <span className="font-semibold text-zinc-400">Angle : </span>
+                  <span className="text-white">{result.angle ?? '—'}</span>
+                </div>
+              </div>
+              <div className="flex gap-3 py-4">
+                <span className="text-lg shrink-0 leading-6" aria-hidden>
+                  🧠
+                </span>
+                <div className="min-w-0 flex-1 text-sm leading-relaxed">
+                  <span className="font-semibold text-zinc-400">Frein identifié : </span>
+                  <span className="text-white">{answers.frein ?? '—'}</span>
+                </div>
+              </div>
+              <div className="flex gap-3 py-4">
+                <span className="text-lg shrink-0 leading-6" aria-hidden>
+                  💡
+                </span>
+                <div className="min-w-0 flex-1 text-sm leading-relaxed">
+                  <span className="font-semibold text-zinc-400">Stratégie : </span>
+                  <span className="text-white">{shortStrategy(result.description, 80)}</span>
+                </div>
+              </div>
             </div>
-            <div className="h-3 rounded-full bg-zinc-800 overflow-hidden relative mb-3">
-              <div
-                className="h-full rounded-full bg-gradient-to-r from-cyan-400 via-cyan-300 to-red-500 transition-[width] duration-[1200ms] ease-out"
-                style={{ width: `${scoreBarPct}%` }}
-              />
-            </div>
-            <p className="text-sm text-zinc-400 relative">{result.description}</p>
           </section>
 
           <section className="rounded-2xl border border-red-500/25 bg-gradient-to-br from-red-500/10 via-zinc-900/40 to-cyan-500/5 p-6 relative overflow-hidden">
